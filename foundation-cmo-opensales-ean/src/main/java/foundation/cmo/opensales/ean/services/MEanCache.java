@@ -1,0 +1,74 @@
+package foundation.cmo.opensales.ean.services;
+
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import foundation.cmo.opensales.ean.dto.MProduct;
+import io.leangen.graphql.annotations.GraphQLContext;
+
+@EnableCaching
+public class MEanCache {
+	
+	@Value("${cmo.foundation.ean.api.url:http://www.eanpictures.com.br:9000}")
+	private String url;
+
+	@Cacheable("ean")
+	public MProduct getProductCache(Long ean) {
+		try {
+			String suri = url;
+			suri = String.format("%s/api/desc/%d", suri, ean);
+
+			URL uri = new URL(suri);
+			HttpURLConnection connection = (HttpURLConnection) uri.openConnection();
+			connection.setRequestProperty("accept", "application/json");
+			
+			InputStream responseStream = connection.getInputStream();
+			ObjectMapper mapper = new ObjectMapper();
+			
+			
+			MProduct product = mapper.readValue(responseStream, new TypeReference<MProduct>() {});
+			if (product.getStatus() != 200) {
+				return null;
+			}
+
+			product.setEan(ean);
+
+			return product;
+		} catch (Exception e) {
+			return null;
+		}
+	}
+	
+	@Cacheable(value = "ean_image", key = "#product?.ean")
+	public String getImage(@GraphQLContext MProduct product) {
+		try {
+			
+			String uri = url;
+			uri = String.format("%s/api/gtin/%d", uri, product.getEan());
+			
+			java.net.URL url = new java.net.URL(uri);
+			InputStream is = url.openStream();
+			byte[] bytes = IOUtils.toByteArray(is);
+			return Base64.encodeBase64String(bytes);
+		} catch (Exception e) {
+			
+			return null;
+		}
+	}
+
+	@CacheEvict({"ean", "ean_image"})
+	public void resetProductCache(Long ean) {
+	}
+
+}

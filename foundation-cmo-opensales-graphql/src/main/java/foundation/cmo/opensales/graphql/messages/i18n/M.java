@@ -1,0 +1,35 @@
+package foundation.cmo.opensales.graphql.messages.i18n;
+
+import java.text.MessageFormat;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.stereotype.Component;
+
+@Component
+public class M {
+
+	@Autowired
+	private MessageSource messageSource;
+
+	public String getString(String input, Object... args) {
+		try {
+			if (input.contains("${") && input.contains("}")) {
+				String regex = "\\$\\{([^}]+)\\}";
+				Pattern pattern = Pattern.compile(regex);
+				Matcher matcher = pattern.matcher(input);
+
+				while (matcher.find()) {
+					String text = matcher.group();
+					String stext = text.replace("${", "").replace("}", "");
+					stext = messageSource.getMessage(stext, args, Locale.forLanguageTag("pt-BR"));
+					input = input.replace(text, stext);
+				}
+			}
+		} catch (Exception e) {}
+		return MessageFormat.format(input, args);
+	}
+}

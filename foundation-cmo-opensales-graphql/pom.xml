@@ -1,0 +1,19 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>foundation-cmo-opensales-graphql</artifactId>
+  <name>${project.artifactId}</name>
+  
+  <parent>
+    <groupId>foundation.cmo.service</groupId>
+    <artifactId>opensales</artifactId>
+    <version>1.0.16</version>
+  </parent>
+  
+  	<dependencies>
+		<dependency>
+			<groupId>foundation.cmo.service</groupId>
+			<artifactId>foundation-cmo-opensales-libs</artifactId>
+		</dependency>
+  	</dependencies>
+  
+</project>

@@ -1,0 +1,2 @@
+foundation.cmo.opensales.graphql.autoconfigure.MGraphQLAutoConfiguration
+foundation.cmo.opensales.graphql.autoconfigure.MGraphQLWebSocketAutoConfiguration
