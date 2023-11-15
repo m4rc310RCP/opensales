@@ -46,6 +46,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
+import foundation.cmo.opensales.graphql.exceptions.MException;
 import foundation.cmo.opensales.graphql.handlers.MExceptionHandler;
 import foundation.cmo.opensales.graphql.mappers.annotations.MMapper;
 import foundation.cmo.opensales.graphql.messages.MMessageBuilder;
@@ -180,7 +181,7 @@ public class MGraphQLAutoConfiguration {
 			throw new Exception(error);
 		}
 
-		return new MGraphQLSecurity().getSecurityFilterChain(http, jwt);
+		return new MGraphQLSecurity().getSecurityFilterChain(http, jwt, authUserProvider);
 	}
 
 	@Bean
@@ -538,11 +539,7 @@ public class MGraphQLAutoConfiguration {
 			MAuthToken authentication = (MAuthToken) SecurityContextHolder.getContext().getAuthentication();
 			MAuth auth = context.getResolver().getExecutable().getDelegate().getAnnotation(MAuth.class);
 			if (Objects.nonNull(auth)) {
-				boolean isAuth = authentication.getAuthorities().stream()
-						.anyMatch(ga -> Arrays.asList(auth.rolesRequired()).contains(ga.getAuthority()));
-				if (!isAuth) {
-					throw new IllegalAccessException("Access denied");
-				}
+				authUserProvider.validUserAccess(authentication, auth.rolesRequired());
 			}
 
 			return continuation.proceed(context);

@@ -32,6 +32,8 @@ public class MGraphQLSecurity {
 	private final OncePerRequestFilter jwtAuthFilter = getJwtAuthFilter();
 	private final OncePerRequestFilter basicAuthFilter = getBasicAuthFilter();
 	private final OncePerRequestFilter testFilter = getTestAuthFilter();
+	
+	private IMAuthUserProvider authUserProvider;
 
 	@Value("${IS_DEV:true}")
 	private boolean dev;
@@ -39,8 +41,9 @@ public class MGraphQLSecurity {
 	
 	private MGraphQLJwtService jwt;
 
-	public SecurityFilterChain getSecurityFilterChain(HttpSecurity http, MGraphQLJwtService jwt) throws Exception {
+	public SecurityFilterChain getSecurityFilterChain(HttpSecurity http, MGraphQLJwtService jwt, IMAuthUserProvider authUserProvider) throws Exception {
 		this.jwt = jwt;
+		this.authUserProvider = authUserProvider;
 		return http.cors(cors -> cors.disable()).csrf(csrf -> csrf.disable())
 				.sessionManagement(custom -> custom.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authenticationProvider(getAuthenticationProvider)
@@ -79,11 +82,14 @@ public class MGraphQLSecurity {
 					Long id = Long.parseLong(sid);
 					String login = token.substring(i+1);
 					
-					MUser user = new MUser();
-					user.setCode(id);
+					MUser user = authUserProvider.getUserFromUsername(login);
 					user.setRequestId(sid);
-					user.setUsername(login);
-					user.setRoles(new String[]{"SUPER"});
+					user.setCode(id);
+//					user.setUsername(login);
+//					user.setRoles(new String[]{"SUPER"});
+					
+					
+					
 					SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
 				} catch (Exception e) {
 					SecurityContextHolder.getContext().setAuthentication(null);
@@ -117,7 +123,6 @@ public class MGraphQLSecurity {
 						SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
 					}
 				} catch (Exception e) {
-					e.printStackTrace();
 					SecurityContextHolder.getContext().setAuthentication(null);
 				}
 
