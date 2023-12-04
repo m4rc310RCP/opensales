@@ -12,9 +12,20 @@ import foundation.cmo.opensales.graphql.mappers.annotations.MMapper;
 import graphql.schema.Coercing;
 import graphql.schema.GraphQLScalarType;
 
+/**
+ * The Class MDateMapper.
+ */
 @MMapper
 public class MDateMapper extends MGraphQLScalarType<MDate> {
 
+	/**
+	 * Inits the.
+	 *
+	 * @param element    the element
+	 * @param type       the type
+	 * @param annotation the annotation
+	 * @return the graph QL scalar type
+	 */
 	@Override
 	public GraphQLScalarType init(AnnotatedElement element, AnnotatedType type, MDate annotation) {
 
@@ -33,11 +44,25 @@ public class MDateMapper extends MGraphQLScalarType<MDate> {
 		}
 	}
 
+	/**
+	 * Date to string.
+	 *
+	 * @param date   the date
+	 * @param format the format
+	 * @return the string
+	 */
 	private String dateToString(Date date, String format) {
 		DateFormat df = new SimpleDateFormat(format);
 		return df.format(date);
 	}
 
+	/**
+	 * String to date.
+	 *
+	 * @param sdate  the sdate
+	 * @param format the format
+	 * @return the date
+	 */
 	private Date stringToDate(String sdate, String format) {
 		DateFormat df = new SimpleDateFormat(format);
 		try {
@@ -47,11 +72,25 @@ public class MDateMapper extends MGraphQLScalarType<MDate> {
 		}
 	}
 
+	/**
+	 * Unix to string.
+	 *
+	 * @param unix   the unix
+	 * @param format the format
+	 * @return the string
+	 */
 	private String unixToString(long unix, String format) {
 		DateFormat df = new SimpleDateFormat(format);
 		return df.format(new Date(unix * 1000));
 	}
 
+	/**
+	 * Date to unix.
+	 *
+	 * @param sdate  the sdate
+	 * @param format the format
+	 * @return the long
+	 */
 	private long dateToUnix(String sdate, String format) {
 
 		DateFormat df = new SimpleDateFormat(format);

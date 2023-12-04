@@ -13,10 +13,23 @@ import foundation.cmo.opensales.graphql.security.dto.MUser;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+/**
+ * The Class MFluxService.
+ */
 public class MFluxService {
 
+	/** The registry. */
 	protected final MMultiRegitry<String, FluxSink<Object>> registry = new MMultiRegitry<>();
 
+	/**
+	 * Publish.
+	 *
+	 * @param <T>          the generic type
+	 * @param type         the type
+	 * @param key          the key
+	 * @param defaultValue the default value
+	 * @return the publisher
+	 */
 	@SuppressWarnings("unchecked")
 	public <T> Publisher<T> publish(Class<T> type, Object key, T defaultValue) {
 		String skey = makeId(type, key);
@@ -25,11 +38,26 @@ public class MFluxService {
 				FluxSink.OverflowStrategy.BUFFER);
 	}
 
+	/**
+	 * In publish.
+	 *
+	 * @param type the type
+	 * @param key  the key
+	 * @return true, if successful
+	 */
 	public boolean inPublish(Class<?> type, Object key) {
 		String skey = makeId(type, key);
 		return registry.contains(skey);
 	}
 
+	/**
+	 * Call publish.
+	 *
+	 * @param <T>   the generic type
+	 * @param key   the key
+	 * @param value the value
+	 * @throws Exception the exception
+	 */
 	public <T> void callPublish(Object key, T value) throws Exception {
 		if (value == null) {
 			throw new Exception("Value is null");
@@ -45,16 +73,37 @@ public class MFluxService {
 		registry.get(skey).forEach(sub -> sub.next(value));
 	}
 	
+	/**
+	 * Removes the publish.
+	 *
+	 * @param <T>  the generic type
+	 * @param type the type
+	 * @param key  the key
+	 */
 	public <T> void removePublish(Class<T> type, String key) {
 		String skey = makeId(type, key);
 		registry.remove(skey);
 	}
 
+	/**
+	 * Call publish.
+	 *
+	 * @param <T>   the generic type
+	 * @param type  the type
+	 * @param key   the key
+	 * @param value the value
+	 * @throws Exception the exception
+	 */
 	public <T> void callPublish(Class<T> type, Object key, T value) throws Exception {
 		String skey = makeId(type, key);
 		registry.get(skey).forEach(sub -> sub.next(value));
 	}
 
+	/**
+	 * Authenticated user.
+	 *
+	 * @return the m user
+	 */
 	public MUser authenticatedUser() {
 		try {
 			return (MUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -63,10 +112,23 @@ public class MFluxService {
 		}
 	}
 
+	/**
+	 * Make id.
+	 *
+	 * @param type the type
+	 * @param key  the key
+	 * @return the string
+	 */
 	private String makeId(Class<?> type, Object key) {
 		return String.format("%s-%s", type.getSimpleName(), key);
 	}
 
+	/**
+	 * Clone ato B.
+	 *
+	 * @param a the a
+	 * @param b the b
+	 */
 	public void cloneAtoB(Object a, Object b) {
 
 		List<Field> fas = listAllFields(a);
@@ -132,6 +194,13 @@ public class MFluxService {
 //		});
 	}
 	
+	/**
+	 * Gets the field from type.
+	 *
+	 * @param type      the type
+	 * @param typeField the type field
+	 * @return the field from type
+	 */
 	public Field getFieldFromType (Class<?> type, Class<?> typeField) {
 		List<Field> fields = new ArrayList<>();
 		fields.addAll(Arrays.asList(type.getFields()));
@@ -148,6 +217,12 @@ public class MFluxService {
 	}
 	
 
+	/**
+	 * List all fields.
+	 *
+	 * @param o the o
+	 * @return the list
+	 */
 	private List<Field> listAllFields(Object o) {
 		List<Field> fields = new ArrayList<>();
 		Class<?> type = o.getClass();

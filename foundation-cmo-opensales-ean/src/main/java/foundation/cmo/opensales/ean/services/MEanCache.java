@@ -17,12 +17,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import foundation.cmo.opensales.ean.dto.MProduct;
 import io.leangen.graphql.annotations.GraphQLContext;
 
+/**
+ * The Class MEanCache.
+ */
 @EnableCaching
 public class MEanCache {
 	
+	/** The url. */
 	@Value("${cmo.foundation.ean.api.url:http://www.eanpictures.com.br:9000}")
 	private String url;
 
+	/**
+	 * Gets the product cache.
+	 *
+	 * @param ean the ean
+	 * @return the product cache
+	 */
 	@Cacheable("ean")
 	public MProduct getProductCache(Long ean) {
 		try {
@@ -50,6 +60,12 @@ public class MEanCache {
 		}
 	}
 	
+	/**
+	 * Gets the image.
+	 *
+	 * @param product the product
+	 * @return the image
+	 */
 	@Cacheable(value = "ean_image", key = "#product?.ean")
 	public String getImage(@GraphQLContext MProduct product) {
 		try {
@@ -67,6 +83,11 @@ public class MEanCache {
 		}
 	}
 
+	/**
+	 * Reset product cache.
+	 *
+	 * @param ean the ean
+	 */
 	@CacheEvict({"ean", "ean_image"})
 	public void resetProductCache(Long ean) {
 	}

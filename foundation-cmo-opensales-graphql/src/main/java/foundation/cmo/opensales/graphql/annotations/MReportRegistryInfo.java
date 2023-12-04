@@ -7,6 +7,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+/**
+ * The Interface MReportRegistryInfo.
+ */
 @Retention(RUNTIME)
 @Target({ FIELD, METHOD })
 public @interface MReportRegistryInfo {

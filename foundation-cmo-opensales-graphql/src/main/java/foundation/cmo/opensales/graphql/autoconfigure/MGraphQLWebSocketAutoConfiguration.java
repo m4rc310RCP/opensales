@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.security.web.SecurityFilterChain;
@@ -26,6 +27,7 @@ import io.leangen.graphql.spqr.spring.web.apollo.PerConnectionApolloHandler;
 import io.leangen.graphql.spqr.spring.web.mvc.websocket.GraphQLWebSocketExecutor;
 import lombok.extern.slf4j.Slf4j;
 
+/** The Constant log. */
 @Slf4j
 @AutoConfiguration
 @EnableWebSocket
@@ -35,9 +37,23 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnBean(GraphQLSchema.class)
 public class MGraphQLWebSocketAutoConfiguration extends WebSocketAutoConfiguration {
 
+	/** The config. */
 	private SpqrProperties config;
+	
+	/** The graph QL. */
 	private GraphQL graphQL;
+	
+	/** The jwt service. */
 	private MGraphQLJwtService jwtService;
+	
+	/**
+	 * Instantiates a new m graph QL web socket auto configuration.
+	 *
+	 * @param graphQL                   the graph QL
+	 * @param config                    the config
+	 * @param dataLoaderRegistryFactory the data loader registry factory
+	 * @param jwtService                the jwt service
+	 */
 	public MGraphQLWebSocketAutoConfiguration(GraphQL graphQL, SpqrProperties config,
 			Optional<DataLoaderRegistryFactory> dataLoaderRegistryFactory, MGraphQLJwtService jwtService) {
 		super(graphQL, config, dataLoaderRegistryFactory);
@@ -47,10 +63,20 @@ public class MGraphQLWebSocketAutoConfiguration extends WebSocketAutoConfigurati
 		this.jwtService = jwtService;
 	}
 
+	/**
+	 * Status.
+	 */
+	@Bean(name = "init.MGraphQLWebSocketAutoConfiguration")
 	void status() {
 		log.info("***** Enable WS Security ****");
 	}
 
+	/**
+	 * Web socket handler.
+	 *
+	 * @param executor the executor
+	 * @return the per connection apollo handler
+	 */
 	@Override
 	public PerConnectionApolloHandler webSocketHandler(GraphQLWebSocketExecutor executor) {
 
@@ -63,6 +89,11 @@ public class MGraphQLWebSocketAutoConfiguration extends WebSocketAutoConfigurati
 				keepAliveInterval, sendTimeLimit, sendBufferSizeLimit, jwtService);
 	}
 
+	/**
+	 * Default task scheduler.
+	 *
+	 * @return the task scheduler
+	 */
 	private TaskScheduler defaultTaskScheduler() {
 		ThreadPoolTaskScheduler threadPoolScheduler = new ThreadPoolTaskScheduler();
 		threadPoolScheduler.setThreadNamePrefix("GraphQLWSKeepAlive-");

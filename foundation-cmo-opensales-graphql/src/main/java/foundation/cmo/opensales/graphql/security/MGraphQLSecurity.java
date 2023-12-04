@@ -1,6 +1,7 @@
 package foundation.cmo.opensales.graphql.security;
 
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Objects;
 
 import javax.servlet.FilterChain;
@@ -25,23 +26,45 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import foundation.cmo.opensales.graphql.security.dto.MUser;
 import lombok.extern.slf4j.Slf4j;
 
+/** The Constant log. */
 @Slf4j
 @Configuration
 public class MGraphQLSecurity {
 
+	/** The jwt auth filter. */
+	@SuppressWarnings("unused")
 	private final OncePerRequestFilter jwtAuthFilter = getJwtAuthFilter();
-	private final OncePerRequestFilter basicAuthFilter = getBasicAuthFilter();
-	private final OncePerRequestFilter testFilter = getTestAuthFilter();
 	
+	/** The basic auth filter. */
+	private final OncePerRequestFilter basicAuthFilter = getBasicAuthFilter();
+	
+	/** The bearer auth filter. */
+	private final OncePerRequestFilter bearerAuthFilter = getBearerAuthFilter();
+	
+	/** The test filter. */
+	private final OncePerRequestFilter testFilter = getTestAuthFilter();
+
+	/** The auth user provider. */
 	private IMAuthUserProvider authUserProvider;
 
+	/** The dev. */
 	@Value("${IS_DEV:true}")
 	private boolean dev;
-	
-	
+
+	/** The jwt. */
 	private MGraphQLJwtService jwt;
 
-	public SecurityFilterChain getSecurityFilterChain(HttpSecurity http, MGraphQLJwtService jwt, IMAuthUserProvider authUserProvider) throws Exception {
+	/**
+	 * Gets the security filter chain.
+	 *
+	 * @param http             the http
+	 * @param jwt              the jwt
+	 * @param authUserProvider the auth user provider
+	 * @return the security filter chain
+	 * @throws Exception the exception
+	 */
+	public SecurityFilterChain getSecurityFilterChain(HttpSecurity http, MGraphQLJwtService jwt,
+			IMAuthUserProvider authUserProvider) throws Exception {
 		this.jwt = jwt;
 		this.authUserProvider = authUserProvider;
 		return http.cors(cors -> cors.disable()).csrf(csrf -> csrf.disable())
@@ -49,7 +72,7 @@ public class MGraphQLSecurity {
 				.authenticationProvider(getAuthenticationProvider)
 				.addFilterBefore(testFilter, UsernamePasswordAuthenticationFilter.class)
 				.addFilterBefore(basicAuthFilter, UsernamePasswordAuthenticationFilter.class)
-				.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+				.addFilterBefore(bearerAuthFilter, UsernamePasswordAuthenticationFilter.class)
 				.authorizeHttpRequests(auth -> {
 					auth.regexMatchers(HttpMethod.GET, "/gui", "/graphql").permitAll();
 					auth.regexMatchers(HttpMethod.POST, "/graphql").authenticated();
@@ -57,39 +80,31 @@ public class MGraphQLSecurity {
 				}).build();
 	}
 
+	/**
+	 * Gets the test auth filter.
+	 *
+	 * @return the test auth filter
+	 */
 	private OncePerRequestFilter getTestAuthFilter() {
 		return new OncePerRequestFilter() {
 			final String AUTHORIZATION = "Authorization";
-			final String TEST = "Test";
+			final MEnumToken typeToken = MEnumToken.TEST;
 
 			@Override
 			protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
 					FilterChain filterChain) throws ServletException, IOException {
-				
-				final String authorizationHeader = request.getHeader(AUTHORIZATION);
 
-				if (Objects.isNull(authorizationHeader) || !authorizationHeader.startsWith(TEST)) {
+				final String authorizationHeader = request.getHeader(AUTHORIZATION);
+				String stype = typeToken.getDescription();
+
+				if (Objects.isNull(authorizationHeader) || !authorizationHeader.startsWith(stype)) {
 					filterChain.doFilter(request, response);
 					return;
 				}
 
 				try {
-					String token = authorizationHeader.replace(TEST, "").trim();
-					
-					int i = token.indexOf(":");
-					
-					String sid = token.substring(0, i);
-					Long id = Long.parseLong(sid);
-					String login = token.substring(i+1);
-					
-					MUser user = authUserProvider.getUserFromUsername(login);
-					user.setRequestId(sid);
-					user.setCode(id);
-//					user.setUsername(login);
-//					user.setRoles(new String[]{"SUPER"});
-					
-					
-					
+					String token = authorizationHeader.replace(stype, "").trim();
+					MUser user = authUserProvider.loadUser(jwt, typeToken, token);
 					SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
 				} catch (Exception e) {
 					SecurityContextHolder.getContext().setAuthentication(null);
@@ -100,9 +115,17 @@ public class MGraphQLSecurity {
 		};
 	}
 
+	/**
+	 * Gets the basic auth filter.
+	 *
+	 * @return the basic auth filter
+	 */
 	private OncePerRequestFilter getBasicAuthFilter() {
 		final String AUTHORIZATION = "Authorization";
-		final String BASIC = "Basic";
+		final MEnumToken typeToken = MEnumToken.BASIC;
+		final String stype = typeToken.getDescription();
+
+		// final String BASIC = "Basic";
 
 		return new OncePerRequestFilter() {
 			@Override
@@ -110,18 +133,15 @@ public class MGraphQLSecurity {
 					FilterChain filterChain) throws ServletException, IOException {
 
 				final String authorizationHeader = request.getHeader(AUTHORIZATION);
-				if (Objects.isNull(authorizationHeader) || !authorizationHeader.startsWith(BASIC)) {
+				if (Objects.isNull(authorizationHeader) || !authorizationHeader.startsWith(stype)) {
 					filterChain.doFilter(request, response);
 					return;
 				}
 
 				try {
-					String token = authorizationHeader.replace(BASIC, "").trim();
-
-					MUser user = jwt.userFromToken(token, MUser.class);
-					if (jwt.isValidateUser(user)) {
-						SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
-					}
+					String token = authorizationHeader.replace(stype, "").trim();
+					MUser user = authUserProvider.loadUser(jwt, typeToken, token);
+					SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
 				} catch (Exception e) {
 					SecurityContextHolder.getContext().setAuthentication(null);
 				}
@@ -130,12 +150,62 @@ public class MGraphQLSecurity {
 			}
 		};
 	}
+	
+	/**
+	 * Gets the bearer auth filter.
+	 *
+	 * @return the bearer auth filter
+	 */
+	private OncePerRequestFilter getBearerAuthFilter() {
+		final String AUTHORIZATION = "Authorization";
+		final MEnumToken typeToken = MEnumToken.BEARER;
+		final String stype = typeToken.getDescription();
+		
+		return new OncePerRequestFilter() {
+			@Override
+			protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+					FilterChain filterChain) throws ServletException, IOException {
+				
+				final String authorizationHeader = request.getHeader(AUTHORIZATION);
+				
+				if (authorizationHeader == null || !authorizationHeader.startsWith(stype)) {
+					filterChain.doFilter(request, response);
+					return;
+				}
 
+				try {
+					if (SecurityContextHolder.getContext().getAuthentication() == null) {
+						final String token = authorizationHeader.replace(stype, "").trim();
+						MUser user = authUserProvider.loadUser(jwt, typeToken, token);
+						SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
+					}
+				} catch (Exception e) {
+					log.error(e.getMessage());
+				}
+
+				filterChain.doFilter(request, response);
+			}
+		};
+	}
+	
+	
+	
+
+	/**
+	 * Gets the m graph QL jwt service.
+	 *
+	 * @return the m graph QL jwt service
+	 */
 	@Bean
 	MGraphQLJwtService getMGraphQLJwtService() {
 		return new MGraphQLJwtService();
 	}
 
+	/**
+	 * Gets the jwt auth filter.
+	 *
+	 * @return the jwt auth filter
+	 */
 	private OncePerRequestFilter getJwtAuthFilter() {
 
 		return new OncePerRequestFilter() {
@@ -145,28 +215,36 @@ public class MGraphQLSecurity {
 					FilterChain filterChain) throws ServletException, IOException {
 
 				final String AUTHORIZATION = "Authorization";
-				final String BEARER = "Bearer";
 
+				final MEnumToken typeToken = MEnumToken.BEARER;
+				final String stype = typeToken.getDescription();
+				
+				Enumeration<String> headers = request.getHeaderNames();
+				while(headers.hasMoreElements()) {
+					log.info(headers.nextElement());
+				}
+				
+				
+				log.info(">>> {}", request.getHeader(AUTHORIZATION));
 				final String authorizationHeader = request.getHeader(AUTHORIZATION);
-				if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER)) {
+				if (authorizationHeader == null || !authorizationHeader.startsWith(stype)) {
 					filterChain.doFilter(request, response);
 					return;
 				}
 
 				log.info(authorizationHeader);
-
-//				final String token = authorizationHeader.replace(BEARER, "").trim();
+				
 //				final String username;
 
 				try {
-				} catch (Exception e) {
-					log.error(e.getMessage());
-				}
+					if (SecurityContextHolder.getContext().getAuthentication() == null) {
+						final String token = authorizationHeader.replace(stype, "").trim();
+						MUser user = authUserProvider.loadUser(jwt, typeToken, token);
+						SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
 
-//				username = jwtService.extractUsername(token);
-//
-//				if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-//					MUserDetails user = MUserDetails.to(userDetails.getUserFromUsername(username));
+//					String username = jwt.extractUsername(token);					
+						// MUserDetails user = MUserDetails.
+						// .to(userDetails.getUserFromUsername(username));
 //					if (jwtService.isTokenValid(token, user)) {
 //						Date expiration = jwtService.extractExpiration(token);
 //						user.getUser().setAccessValidUntil(expiration);
@@ -176,13 +254,17 @@ public class MGraphQLSecurity {
 //		                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 //		                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 //					}
-//				}
+					}
+				} catch (Exception e) {
+					log.error(e.getMessage());
+				}
 
 				filterChain.doFilter(request, response);
 			}
 		};
 	}
 
+	/** The get authentication provider. */
 	private AuthenticationProvider getAuthenticationProvider = new AuthenticationProvider() {
 
 		@Override

@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 
 
+
 @Slf4j
 @AutoConfiguration
 @EnableConfigurationProperties(MJasperAutoConfiguration.MJasperProperty.class)
@@ -26,33 +27,61 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "cmo.foundation.jasper.enable", havingValue = "true", matchIfMissing = false)
 public class MJasperAutoConfiguration {
 
+	/** The format. */
 	@Value("${FORMAT_MESSAGES:true}")
 	private boolean format;
 
+	/**
+	 * Status.
+	 */
 	@Bean("status-jasper")
 	void status() {
 		log.info("~> Module '{}' has been loaded.", "cmo.foundation.jasper");
 	}
 
+	
 	@Data
 	@ConfigurationProperties("cmo.foundation.jasper")
 	public class MJasperProperty {
+		
+		/** The enable. */
 		private boolean enable;
+		
+		/** The report. */
 		private Report report;
 
+		/**
+		 * Instantiates a new report.
+		 */
 		@Data
 		public class Report {
+			
+			/** The path. */
 			private String path;
 		}
 	}
 
+	/**
+	 * The listener interface for receiving MApplication events. The class that is
+	 * interested in processing a MApplication event implements this interface, and
+	 * the object created with that class is registered with a component using the
+	 * component's <code>addMApplicationListener</code> method. When the MApplication
+	 * event occurs, that object's appropriate method is invoked.
+	 *
+	 */
 	@Component
 	@ConditionalOnProperty(name = "cmo.foundation.jasper.enable", matchIfMissing = true)
 	public class MApplicationListener implements ApplicationListener<ApplicationReadyEvent> {
 		
+		/** The service. */
 		@Autowired 
 		private MRService service;
 
+		/**
+		 * On application event.
+		 *
+		 * @param event the event
+		 */
 		@Override
 		public void onApplicationEvent(ApplicationReadyEvent event) {
 			log.info("~~> Compile Jasper Reports? = [{}]", format);
@@ -65,6 +94,11 @@ public class MJasperAutoConfiguration {
 		}
 	}
 
+	/**
+	 * Load MR sevice.
+	 *
+	 * @return the MR service
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	MRService loadMRSevice() {

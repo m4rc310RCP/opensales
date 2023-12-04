@@ -22,22 +22,36 @@ import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 
+/** The Constant log. */
 @Slf4j
 @Service
 public class MMessageBuilder {
 	
+	/** The messages. */
 	private final Map<String, Map<String, String>> messages = new HashMap<>();
+	
+	/** The lv. */
 	private int lv = 0;
 	
+	/** The const path. */
 	@Value("${cmo.foundation.graphql.constants.path:}")
 	private String constPath;
 	
+	/** The classname. */
 	@Value("${cmo.foundation.graphql.constants.classname:cmo.foundation.MConst}")
 	private String classname;
 	
+	/** The message source. */
 	@Autowired
 	private MessageSource messageSource;
 	
+	/**
+	 * Gets the message.
+	 *
+	 * @param key  the key
+	 * @param args the args
+	 * @return the message
+	 */
 	public String getMessage(String key, Object... args) {
 		try {
 			if (key.contains("${")) {
@@ -63,6 +77,12 @@ public class MMessageBuilder {
 	}
 	
 	
+	/**
+	 * Append text.
+	 *
+	 * @param key  the key
+	 * @param text the text
+	 */
 	public void appendText(String key, String text) {
 		
 		
@@ -79,6 +99,9 @@ public class MMessageBuilder {
 		}
 	}
 	
+	/**
+	 * Fix unknow messages.
+	 */
 	public void fixUnknowMessages() {
 
 		PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(

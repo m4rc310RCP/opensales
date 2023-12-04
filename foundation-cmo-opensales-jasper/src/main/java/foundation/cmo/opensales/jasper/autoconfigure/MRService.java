@@ -37,16 +37,26 @@ import net.sf.jasperreports.engine.design.JasperDesign;
 import net.sf.jasperreports.engine.util.JRLoader;
 import net.sf.jasperreports.engine.xml.JRXmlLoader;
 
+/** The Constant log. */
 @Slf4j
 public class MRService {
 	
 
+	/** The reports path. */
 	@Value("${cmo.foundation.jasper.report.path:reports}")
 	private String reportsPath;
 
+	/** The reports delemiter. */
 	@Value("${cmo.foundation.jasper.report.delemiter:_&_}")
 	private String reportsDelemiter;
 	
+	/**
+	 * Pixels to millimeters.
+	 *
+	 * @param pixels the pixels
+	 * @param dpi    the dpi
+	 * @return the double
+	 */
 	public double pixelsToMillimeters(int pixels, int dpi) {
         double milimetersPerInch = 25.4;
         double inches = (double) pixels / dpi;
@@ -54,6 +64,12 @@ public class MRService {
         return milimeters;
     }
 	
+	/**
+	 * Gets the JR bean data source object.
+	 *
+	 * @param value the value
+	 * @return the JR bean data source object
+	 */
 	public  JRRewindableDataSource getJRBeanDataSourceObject(Object value) {
 		try {
 			return new JRBeanCollectionDataSource(Arrays.asList(value));
@@ -62,6 +78,12 @@ public class MRService {
 		}
 	}
 
+	/**
+	 * Gets the JR bean data source list.
+	 *
+	 * @param list the list
+	 * @return the JR bean data source list
+	 */
 	public  JRRewindableDataSource getJRBeanDataSourceList(Collection<?> list) {
 		try {
 			return new JRBeanCollectionDataSource(list);
@@ -70,7 +92,15 @@ public class MRService {
 		}
 	}
 	
-	 public Image getQRCode(String contents, int w, int h) {
+	 /**
+	 * Gets the QR code.
+	 *
+	 * @param contents the contents
+	 * @param w        the w
+	 * @param h        the h
+	 * @return the QR code
+	 */
+ 	public Image getQRCode(String contents, int w, int h) {
 	        try {
 
 	            HashMap<EncodeHintType, ErrorCorrectionLevel> hintMap = new HashMap<EncodeHintType, ErrorCorrectionLevel>();
@@ -106,16 +136,40 @@ public class MRService {
 	    }
 	
 	
+	/**
+	 * Gets the jasper print.
+	 *
+	 * @param reportName the report name
+	 * @param values     the values
+	 * @return the jasper print
+	 * @throws Exception the exception
+	 */
 	public JasperPrint getJasperPrint(String reportName, List<?> values) throws Exception {
 		return getJasperPrint(reportName, new HashMap<>(), values);
 	}
 	
+	/**
+	 * Gets the jasper print.
+	 *
+	 * @param reportName the report name
+	 * @param params     the params
+	 * @param values     the values
+	 * @return the jasper print
+	 * @throws Exception the exception
+	 */
 	public JasperPrint getJasperPrint(String reportName, Map<String, Object> params, List<?> values) throws Exception {
 		JasperReport jr = getJasperReport(reportName);
 		params.put("r", this);
 		return JasperFillManager.fillReport(jr, params, new JRBeanCollectionDataSource(values));
 	}
 	
+	/**
+	 * Gets the jasper report.
+	 *
+	 * @param reportName the report name
+	 * @return the jasper report
+	 * @throws Exception the exception
+	 */
 	public JasperReport getJasperReport(String reportName) throws Exception {
 		File jasperFile = getJasper(reportName);
 		if (jasperFile == null) {
@@ -124,6 +178,9 @@ public class MRService {
 		return (JasperReport) JRLoader.loadObject(jasperFile);
 	}
 	
+	/**
+	 * Auto compile reports.
+	 */
 	public void autoCompileReports() {
 		try {
 			File file = new File(reportsPath);
@@ -146,6 +203,12 @@ public class MRService {
 		}
 	}
 	
+	/**
+	 * Compile report.
+	 *
+	 * @param file the file
+	 * @throws Exception the exception
+	 */
 	public void compileReport(File file) throws Exception {
 		final String name = file.getName();
 		log.info("--> Compiling {}...", name);
@@ -166,6 +229,12 @@ public class MRService {
 		JasperCompileManager.compileReportToFile(design, nname);
 	}
 
+	/**
+	 * Gets the jasper.
+	 *
+	 * @param name the name
+	 * @return the jasper
+	 */
 	public File getJasper(String name) {
 		name = name.replace(".jrxml", "");
 		name = name.replace(".jasper", "");
@@ -194,6 +263,12 @@ public class MRService {
 		return null;
 	}
 
+	/**
+	 * Files to compile.
+	 *
+	 * @param dir the dir
+	 * @return the list
+	 */
 	public List<File> filesToCompile(File dir) {
 		List<File> ret = new ArrayList<>();
 		List<File> listJrxml = listf(dir).stream().filter(f -> f.getName().endsWith(".jrxml")).toList();
@@ -249,10 +324,23 @@ public class MRService {
 //	}
 	
 
-	public List<File> listf(File dir) {
+	/**
+ * Listf.
+ *
+ * @param dir the dir
+ * @return the list
+ */
+public List<File> listf(File dir) {
 		return listf(dir, new ArrayList<File>());
 	}
 
+	/**
+	 * Listf.
+	 *
+	 * @param dir  the dir
+	 * @param list the list
+	 * @return the list
+	 */
 	public List<File> listf(File dir, List<File> list) {
 		for (File f : dir.listFiles()) {
 			if (f.isDirectory()) {
@@ -264,6 +352,12 @@ public class MRService {
 		return list;
 	}
 
+	/**
+	 * Gets the hash MD 5.
+	 *
+	 * @param file the file
+	 * @return the hash MD 5
+	 */
 	public String getHashMD5(File file) {
 		try (InputStream is = new FileInputStream(file)) {
 			MessageDigest digest = MessageDigest.getInstance("MD5");

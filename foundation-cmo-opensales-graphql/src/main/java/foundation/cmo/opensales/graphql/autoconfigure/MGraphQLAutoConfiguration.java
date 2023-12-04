@@ -4,7 +4,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Member;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,7 +45,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-import foundation.cmo.opensales.graphql.exceptions.MException;
 import foundation.cmo.opensales.graphql.handlers.MExceptionHandler;
 import foundation.cmo.opensales.graphql.mappers.annotations.MMapper;
 import foundation.cmo.opensales.graphql.messages.MMessageBuilder;
@@ -88,30 +86,51 @@ import net.bytebuddy.description.modifier.Visibility;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
 import net.bytebuddy.implementation.FixedValue;
 
+/** The Constant log. */
 @Slf4j
 @AutoConfiguration
 @EnableConfigurationProperties(MGraphQLProperty.class)
 @ConditionalOnProperty(name = MConsts.PROPERTY$enable_graphql, havingValue = "true", matchIfMissing = false)
 public class MGraphQLAutoConfiguration {
 
+	/** The format. */
 	@Value("${FORMAT_MESSAGES:true}")
 	private boolean format;
 
+	/** The message builder. */
 	private final MMessageBuilder messageBuilder;
 
+	/** The auth user provider. */
 	@Autowired(required = false)
 	private IMAuthUserProvider authUserProvider;
+	
+	//@Autowired
+	//private MPerConnectionProtocolHandler connectionProtocolHandler;
+	
+	
 
+	/**
+	 * Instantiates a new m graph QL auto configuration.
+	 */
 	public MGraphQLAutoConfiguration() {
 		this.messageBuilder = new MMessageBuilder();
 
 	}
 
+	/**
+	 * Status.
+	 */
 	@Bean("status-graphql")
 	void status() {
 		log.info("~> Module '{}' has been loaded.", "foundation.cmo.service.graphql");
 	}
 
+/**
+ * Test dinamic class.
+ *
+ * @return the object
+ * @throws Exception the exception
+ */
 //	@Bean
 	Object testDinamicClass() throws Exception {
 		Class<?> type = new ByteBuddy().subclass(Object.class).name("MServiceTestV1").annotateType(new GraphQLApi[0])
@@ -121,17 +140,36 @@ public class MGraphQLAutoConfiguration {
 
 		return type.getDeclaredConstructor().newInstance();
 	}
+	
+	
+	
 
+	/**
+	 * Load M flux service.
+	 *
+	 * @return the m flux service
+	 */
 	@Bean
 	MFluxService loadMFluxService() {
 		return new MFluxService();
 	}
 
+	/**
+	 * Load M message builder.
+	 *
+	 * @return the m message builder
+	 */
 	@Bean()
 	MMessageBuilder loadMMessageBuilder() {
 		return messageBuilder;
 	} 
 
+	/**
+	 * Graph QL.
+	 *
+	 * @param schema the schema
+	 * @return the graph QL
+	 */
 	@Bean
 	GraphQL graphQL(GraphQLSchema schema) {
 //		schema.getQueryType().getFields().forEach(def -> {
@@ -155,6 +193,11 @@ public class MGraphQLAutoConfiguration {
 
 	// ----- Security ----- //
 	
+	/**
+	 * Cors configurer.
+	 *
+	 * @return the web mvc configurer
+	 */
 	@Bean
     WebMvcConfigurer corsConfigurer() {
 		log.info("Configure Cors");
@@ -166,11 +209,24 @@ public class MGraphQLAutoConfiguration {
         };
     }
 	
+	/**
+	 * Gets the m graph QL jwt service.
+	 *
+	 * @return the m graph QL jwt service
+	 */
 	@Bean
 	MGraphQLJwtService getMGraphQLJwtService() {
 		return new MGraphQLJwtService();
 	}
 
+	/**
+	 * Load security.
+	 *
+	 * @param http the http
+	 * @param jwt  the jwt
+	 * @return the security filter chain
+	 * @throws Exception the exception
+	 */
 	@Bean
 	@ConditionalOnProperty(name = "cmo.foundation.graphql.security.enable", matchIfMissing = true)
 	SecurityFilterChain loadSecurity(HttpSecurity http, MGraphQLJwtService jwt) throws Exception {
@@ -183,7 +239,13 @@ public class MGraphQLAutoConfiguration {
 
 		return new MGraphQLSecurity().getSecurityFilterChain(http, jwt, authUserProvider);
 	}
-
+	
+	
+	/**
+	 * Gets the user details service.
+	 *
+	 * @return the user details service
+	 */
 	@Bean
 	MUser getUserDetailsService() {
 		if (authUserProvider != null) {
@@ -192,11 +254,24 @@ public class MGraphQLAutoConfiguration {
 		return null;
 	}
 
+	/**
+	 * The listener interface for receiving MApplication events. The class that is
+	 * interested in processing a MApplication event implements this interface, and
+	 * the object created with that class is registered with a component using the
+	 * component's <code>addMApplicationListener</code> method. When the MApplication
+	 * event occurs, that object's appropriate method is invoked.
+	 *
+	 */
 	// ----- Messages ----- //
 	@Component
 	@ConditionalOnProperty(name = MConsts.PROPERTY$enable_graphql, matchIfMissing = true)
 	public class MApplicationListener implements ApplicationListener<ApplicationReadyEvent> {
 
+		/**
+		 * On application event.
+		 *
+		 * @param event the event
+		 */
 		@Override
 		public void onApplicationEvent(ApplicationReadyEvent event) {
 			log.info("~~> Start format auxiliar? = [{}]", format);
@@ -208,6 +283,11 @@ public class MGraphQLAutoConfiguration {
 		}
 	}
 
+	/**
+	 * Message source.
+	 *
+	 * @return the message source
+	 */
 	@Bean(name = "messageSource")
 	MessageSource messageSource() {
 		ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
@@ -215,16 +295,33 @@ public class MGraphQLAutoConfiguration {
 		return messageSource;
 	}
 
+	/**
+	 * Message bundle.
+	 *
+	 * @return the message bundle
+	 */
 	@Bean
 	MessageBundle messageBundle() {
 		return key -> getString(key);
 	}
 
+	/**
+	 * Load message.
+	 *
+	 * @return the m
+	 */
 	@Bean
 	M loadMessage() {
 		return new M();
 	}
 
+	/**
+	 * Gets the string.
+	 *
+	 * @param pattern the pattern
+	 * @param args    the args
+	 * @return the string
+	 */
 	public String getString(String pattern, Object... args) {
 		try {
 			String message = messageSource().getMessage(pattern, args, Locale.forLanguageTag("pt-BR"));
@@ -249,6 +346,11 @@ public class MGraphQLAutoConfiguration {
 		}
 	}
 
+	/**
+	 * Load improved naming strategy.
+	 *
+	 * @return the improved naming strategy
+	 */
 	@Bean
 	ImprovedNamingStrategy loadImprovedNamingStrategy() {
 		return new ImprovedNamingStrategy() {
@@ -263,6 +365,11 @@ public class MGraphQLAutoConfiguration {
 
 	}
 
+	/**
+	 * Physical naming strategy standard.
+	 *
+	 * @return the physical naming strategy standard impl
+	 */
 	@Bean
 	PhysicalNamingStrategyStandardImpl physicalNamingStrategyStandard() {
 		return new MPhysicalNamingImpl() {
@@ -299,6 +406,11 @@ public class MGraphQLAutoConfiguration {
 		};
 	}
 
+	/**
+	 * Implicit.
+	 *
+	 * @return the implicit naming strategy
+	 */
 	@Bean
 	ImplicitNamingStrategy implicit() {
 		return new ImplicitNamingStrategyLegacyJpaImpl() {
@@ -360,6 +472,11 @@ public class MGraphQLAutoConfiguration {
 		};
 	}
 
+	/**
+	 * Pageable input field.
+	 *
+	 * @return the extension provider
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	ExtensionProvider<GeneratorConfiguration, TypeMapper> pageableInputField() {
@@ -420,7 +537,13 @@ public class MGraphQLAutoConfiguration {
 //		};
 //	}
 
-	@Bean
+	/**
+ * Graph QL schema.
+ *
+ * @param schemaGenerator the schema generator
+ * @return the graph QL schema
+ */
+@Bean
 //	@ConditionalOnMissingBean
 	GraphQLSchema graphQLSchema(GraphQLSchemaGenerator schemaGenerator) {
 		schemaGenerator.withResolverInterceptors(new AuthInterceptor(), new RegistryInfoInterceptor());
@@ -430,15 +553,30 @@ public class MGraphQLAutoConfiguration {
 		return schemaGenerator.generate();
 	}
 
+	/**
+	 * The Class MOperationInfoGenerator.
+	 */
 	@SuppressWarnings("unused")
 	private class MOperationInfoGenerator implements OperationInfoGenerator {
 
+		/**
+		 * Name.
+		 *
+		 * @param params the params
+		 * @return the string
+		 */
 		@Override
 		public String name(OperationInfoGeneratorParams params) {
 			String name = getName(params);
 			return name;
 		}
 
+		/**
+		 * Description.
+		 *
+		 * @param params the params
+		 * @return the string
+		 */
 		@Override
 		public String description(OperationInfoGeneratorParams params) {
 			String name = getName(params);
@@ -448,11 +586,23 @@ public class MGraphQLAutoConfiguration {
 			return null;
 		}
 
+		/**
+		 * Deprecation reason.
+		 *
+		 * @param params the params
+		 * @return the string
+		 */
 		@Override
 		public String deprecationReason(OperationInfoGeneratorParams params) {
 			return null;
 		}
 
+		/**
+		 * Gets the name.
+		 *
+		 * @param params the params
+		 * @return the name
+		 */
 		private String getName(OperationInfoGeneratorParams params) {
 			AnnotatedElement element = params.getElement().getElement();
 			if (element.isAnnotationPresent(GraphQLQuery.class)) {
@@ -470,6 +620,12 @@ public class MGraphQLAutoConfiguration {
 			}
 		}
 
+		/**
+		 * Gets the member.
+		 *
+		 * @param params the params
+		 * @return the member
+		 */
 		private Member getMember(OperationInfoGeneratorParams params) {
 			Object supplier = params.getInstanceSupplier().get().getClass();
 			AnnotatedElement element = params.getElement().getElement();
@@ -478,6 +634,11 @@ public class MGraphQLAutoConfiguration {
 
 	}
 
+	/**
+	 * Load default operation info generator.
+	 *
+	 * @return the default operation info generator
+	 */
 	@Bean
 	DefaultOperationInfoGenerator loadDefaultOperationInfoGenerator() {
 		return new DefaultOperationInfoGenerator() {
@@ -488,6 +649,11 @@ public class MGraphQLAutoConfiguration {
 		};
 	}
 
+	/**
+	 * Load input field info generator.
+	 *
+	 * @return the input field info generator
+	 */
 	@Bean
 	InputFieldInfoGenerator loadInputFieldInfoGenerator() {
 		return new InputFieldInfoGenerator() {
@@ -505,6 +671,11 @@ public class MGraphQLAutoConfiguration {
 		};
 	}
 
+/**
+ * Test type info generator.
+ *
+ * @return the type info generator
+ */
 //	 @Bean
 	TypeInfoGenerator testTypeInfoGenerator() {
 		return new TypeInfoGenerator() {
@@ -532,8 +703,19 @@ public class MGraphQLAutoConfiguration {
 //	}
 	
 
-	private class AuthInterceptor implements ResolverInterceptor {
+	/**
+ * The Class AuthInterceptor.
+ */
+private class AuthInterceptor implements ResolverInterceptor {
 
+		/**
+		 * Around invoke.
+		 *
+		 * @param context      the context
+		 * @param continuation the continuation
+		 * @return the object
+		 * @throws Exception the exception
+		 */
 		@Override
 		public Object aroundInvoke(InvocationContext context, Continuation continuation) throws Exception {
 			MAuthToken authentication = (MAuthToken) SecurityContextHolder.getContext().getAuthentication();
@@ -546,8 +728,19 @@ public class MGraphQLAutoConfiguration {
 		}
 	}
 
+	/**
+	 * The Class RegistryInfoInterceptor.
+	 */
 	private class RegistryInfoInterceptor implements ResolverInterceptor {
 
+		/**
+		 * Around invoke.
+		 *
+		 * @param context      the context
+		 * @param continuation the continuation
+		 * @return the object
+		 * @throws Exception the exception
+		 */
 		@Override
 		public Object aroundInvoke(InvocationContext context, Continuation continuation) throws Exception {
 //			MReportRegistryInfo rri = context.getResolver().getExecutable().getDelegate()
@@ -563,21 +756,44 @@ public class MGraphQLAutoConfiguration {
 		}
 	}
 
+	/**
+	 * The Class MissingGenerics.
+	 */
 	@SuppressWarnings({"rawtypes","unchecked"})
 	public static class MissingGenerics {
+		
+		/** The raw. */
 		private final Map raw;
+        
+        /** The unbounded. */
         private final Map<?, ?> unbounded;
 
+        /**
+		 * Instantiates a new missing generics.
+		 *
+		 * @param raw       the raw
+		 * @param unbounded the unbounded
+		 */
         @JsonCreator
         public MissingGenerics(Map raw, Map<?, ?> unbounded) {
             this.raw = raw;
             this.unbounded = unbounded;
         }
 
+		/**
+		 * Gets the raw.
+		 *
+		 * @return the raw
+		 */
 		public Map<Integer, Integer> getRaw() {
             return raw;
         }
 
+        /**
+		 * Gets the unbounded.
+		 *
+		 * @return the unbounded
+		 */
         public Map<?, ?> getUnbounded() {
             return unbounded;
         }

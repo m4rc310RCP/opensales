@@ -1,3 +1,6 @@
+/*
+ * 
+ */
 package foundation.cmo.opensales.graphql.messages.i18n;
 
 import java.text.MessageFormat;
@@ -12,9 +15,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class M {
 
+	/** The message source. */
 	@Autowired
 	private MessageSource messageSource;
 
+	/**
+	 * Gets the string.
+	 *
+	 * @param input the input
+	 * @param args  the args
+	 * @return the string
+	 */
 	public String getString(String input, Object... args) {
 		try {
 			if (input.contains("${") && input.contains("}")) {

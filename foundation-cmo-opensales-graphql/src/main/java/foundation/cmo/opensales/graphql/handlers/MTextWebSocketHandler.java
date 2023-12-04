@@ -15,6 +15,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.scheduling.TaskScheduler;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -23,6 +24,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import foundation.cmo.opensales.graphql.security.IMAuthUserProvider;
+import foundation.cmo.opensales.graphql.security.MAuthToken;
+import foundation.cmo.opensales.graphql.security.MEnumToken;
 import foundation.cmo.opensales.graphql.security.MGraphQLJwtService;
 import foundation.cmo.opensales.graphql.security.dto.MUser;
 import foundation.cmo.opensales.graphql.ws.MInitMessage;
@@ -41,20 +45,49 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
+/** The Constant log. */
 @Slf4j
-@Import(MGraphQLJwtService.class)
+@Import({MGraphQLJwtService.class})
 public class MTextWebSocketHandler extends TextWebSocketHandler {
 
+	/** The graph QL. */
 	private final GraphQL graphQL;
+	
+	/** The executor. */
 	private final GraphQLWebSocketExecutor executor;
+	
+	/** The task scheduler. */
 	private final TaskScheduler taskScheduler;
+	
+	/** The keep alive interval. */
 	private final int keepAliveInterval;
+	
+	/** The subscriptions. */
 	private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
+	
+	/** The keep alive. */
 	private final AtomicReference<ScheduledFuture<?>> keepAlive = new AtomicReference<>();
-
+	
+	/** The jwt service. */
 	@Autowired
 	private MGraphQLJwtService jwtService;
 
+	/** The auth user provider. */
+	@Autowired
+	private IMAuthUserProvider authUserProvider;
+	
+	/** The user. */
+	private MUser user;
+	
+	/**
+	 * Instantiates a new m text web socket handler.
+	 *
+	 * @param graphQL           the graph QL
+	 * @param executor          the executor
+	 * @param taskScheduler     the task scheduler
+	 * @param keepAliveInterval the keep alive interval
+	 * @param jwtService        the jwt service
+	 */
 	public MTextWebSocketHandler(GraphQL graphQL, GraphQLWebSocketExecutor executor, TaskScheduler taskScheduler,
 			int keepAliveInterval, MGraphQLJwtService jwtService) {
 		this.graphQL = graphQL;
@@ -64,6 +97,12 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		this.jwtService = jwtService;
 	}
 
+	/**
+	 * After connection established.
+	 *
+	 * @param session the session
+	 * @throws Exception the exception
+	 */
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 		super.afterConnectionEstablished(session);
@@ -73,6 +112,12 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * After connection closed.
+	 *
+	 * @param session the session
+	 * @param status  the status
+	 */
 	@Override
 	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
 		cancelAll();
@@ -86,11 +131,19 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * Handle text message.
+	 *
+	 * @param session the session
+	 * @param message the message
+	 * @throws Exception the exception
+	 */
 	@Override
 	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 		try {
 
 			MMessage mmessage;
+			
 			try {
 				mmessage = MMessages.from(message);
 			} catch (Exception e) {
@@ -99,12 +152,11 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 				return;
 			}
 
+
 			switch (mmessage.getType()) {
 			case GQL_CONNECTION_INIT:
 				MUser user = fromPayload(message.getPayload());
-				
-				log.info("-> {}", user);
-
+				SecurityContextHolder.getContext().setAuthentication(new MAuthToken(user));
 				session.sendMessage(MMessages.connectionAck());
 				if (taskScheduler != null) {
 					session.sendMessage(MMessages.keepAlive());
@@ -126,6 +178,7 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 				if (toStop != null) {
 					toStop.dispose();
 					subscriptions.remove(mmessage.getId(), toStop);
+					SecurityContextHolder.getContext().setAuthentication(null);
 				}
 				break;
 			case GQL_CONNECTION_TERMINATE:
@@ -139,6 +192,13 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * From payload.
+	 *
+	 * @param payload the payload
+	 * @return the m user
+	 * @throws Exception the exception
+	 */
 	private MUser fromPayload(String payload) throws Exception {
 
 		final String BEARER = "Bearer";
@@ -153,35 +213,27 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		String token = (String) mpay.get("Authorization");
 		token = token.trim();
 
-		String username;
-
 		if (token.startsWith(TEST) && jwtService.isDev()) {
-			username = token.replace(TEST, "").trim();
-
-			int i = username.indexOf(":");
-
-			String snumber = username.substring(0, i);
-			username = username.substring(i + 1);
-
-			MUser user = new MUser();
-			user.setCode(Long.parseLong(snumber));
-			user.setUsername(username);
-			user.setRoles(new String[]{"SUPER"});
-			return user;
+			token = token.replace(TEST, "").trim();
+			return jwtService.loadUserFromToken(token, MEnumToken.TEST);
 		}else if (token.startsWith(BEARER)) {
 			token = token.replace(BEARER, "").trim();
-			return jwtService.userFromToken(token, MUser.class);
+			return jwtService.loadUserFromToken(token, MEnumToken.BEARER);
 		}else if (token.startsWith(BASIC)) {
 			token = token.replace(BASIC, "").trim();
-			username = jwtService.extractUsername(token);
-			MUser user = new MUser();
-			user.setUsername(username);
-			return user;
+			return jwtService.loadUserFromToken(token, MEnumToken.BASIC);
 		}
 
 		return null;
 	}
 
+	/**
+	 * Handle query or mutation.
+	 *
+	 * @param id      the id
+	 * @param result  the result
+	 * @param session the session
+	 */
 	private void handleQueryOrMutation(String id, ExecutionResult result, WebSocketSession session) {
 		try {
 			session.sendMessage(MMessages.data(id, result));
@@ -191,6 +243,13 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * Handle subscription.
+	 *
+	 * @param id              the id
+	 * @param executionResult the execution result
+	 * @param session         the session
+	 */
 	private void handleSubscription(String id, ExecutionResult executionResult, WebSocketSession session) {
 		Publisher<ExecutionResult> events = executionResult.getData();
 
@@ -201,11 +260,24 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * Handle transport error.
+	 *
+	 * @param session   the session
+	 * @param exception the exception
+	 */
 	@Override
 	public void handleTransportError(WebSocketSession session, Throwable exception) {
 		fatalError(session, exception);
 	}
 
+	/**
+	 * On next.
+	 *
+	 * @param result  the result
+	 * @param id      the id
+	 * @param session the session
+	 */
 	private void onNext(ExecutionResult result, String id, WebSocketSession session) {
 		try {
 			if (result.getErrors().isEmpty()) {
@@ -218,6 +290,13 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * On error.
+	 *
+	 * @param error   the error
+	 * @param id      the id
+	 * @param session the session
+	 */
 	private void onError(Throwable error, String id, WebSocketSession session) {
 		try {
 			session.sendMessage(MMessages.error(id, error));
@@ -227,6 +306,12 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * On complete.
+	 *
+	 * @param id      the id
+	 * @param session the session
+	 */
 	private void onComplete(String id, WebSocketSession session) {
 		try {
 			session.sendMessage(MMessages.complete(id));
@@ -235,6 +320,9 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * Cancel all.
+	 */
 	void cancelAll() {
 		synchronized (subscriptions) {
 			subscriptions.values().forEach(Disposable::dispose);
@@ -242,6 +330,12 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		}
 	}
 
+	/**
+	 * Fatal error.
+	 *
+	 * @param session   the session
+	 * @param exception the exception
+	 */
 	private void fatalError(WebSocketSession session, Throwable exception) {
 		try {
 			session.close(
@@ -254,6 +348,12 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 		// exception", session.getId(), session.getRemoteAddress()), exception);
 	}
 
+	/**
+	 * Keep alive task.
+	 *
+	 * @param session the session
+	 * @return the runnable
+	 */
 	private Runnable keepAliveTask(WebSocketSession session) {
 		return () -> {
 			try {

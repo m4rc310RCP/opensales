@@ -9,9 +9,20 @@ import foundation.cmo.opensales.graphql.mappers.annotations.MMapper;
 import graphql.schema.Coercing;
 import graphql.schema.GraphQLScalarType;
 
+/**
+ * The Class MCaseMapper.
+ */
 @MMapper
 public class MCaseMapper extends MGraphQLScalarType<MCase> {
 
+	/**
+	 * Inits the.
+	 *
+	 * @param element    the element
+	 * @param type       the type
+	 * @param annotation the annotation
+	 * @return the graph QL scalar type
+	 */
 	@Override
 	public GraphQLScalarType init(AnnotatedElement element, AnnotatedType type, MCase annotation) {
 		
@@ -23,6 +34,13 @@ public class MCaseMapper extends MGraphQLScalarType<MCase> {
 		return get(String.format("Case%s",  annotation.value()), message, coercing);
 	}
 
+	/**
+	 * Change case.
+	 *
+	 * @param value      the value
+	 * @param annotation the annotation
+	 * @return the string
+	 */
 	private String changeCase(String value, MCase annotation) {
 		
 		switch (annotation.value()) {

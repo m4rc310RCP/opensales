@@ -6,7 +6,20 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 
+/**
+ * The Class MCoercingUtils.
+ */
 public class MCoercingUtils {
+	
+	/**
+	 * Gets the.
+	 *
+	 * @param <T>        the generic type
+	 * @param type       the type
+	 * @param fromString the from string
+	 * @param toString   the to string
+	 * @return the coercing
+	 */
 	public static <T> Coercing<T, String> get(Class<T> type, MFunction<String, T> fromString,
 			MFunction<T, String> toString) {
 		return new Coercing<T, String>() {
@@ -52,8 +65,22 @@ public class MCoercingUtils {
 		};
 	}
 
+	/**
+	 * The Interface MFunction.
+	 *
+	 * @param <T> the generic type
+	 * @param <R> the generic type
+	 */
 	@FunctionalInterface
 	public interface MFunction<T, R> {
+		
+		/**
+		 * Apply.
+		 *
+		 * @param t the t
+		 * @return the r
+		 * @throws Exception the exception
+		 */
 		R apply(T t) throws Exception;
 	}
 }

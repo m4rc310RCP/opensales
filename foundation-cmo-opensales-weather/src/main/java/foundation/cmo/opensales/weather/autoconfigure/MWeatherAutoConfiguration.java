@@ -12,6 +12,7 @@ import foundation.cmo.opensales.weather.services.MWeatherService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+/** The Constant log. */
 @Slf4j
 @AutoConfiguration
 @EnableConfigurationProperties(MWeatherAutoConfiguration.MWeatherProperty.class)
@@ -19,20 +20,33 @@ import lombok.extern.slf4j.Slf4j;
 @ConditionalOnProperty(name = "cmo.foundation.weather.enable", havingValue = "true", matchIfMissing = false)
 public class MWeatherAutoConfiguration {
 
+	/**
+	 * Status.
+	 */
 	@Bean("status-weather")
 	void status() {
 		log.info("~> Module '{}' has been loaded.", "foundation.cmo.opensales.weather");
 	}
 	
 	
+	/**
+	 * Load M weather service.
+	 *
+	 * @return the m weather service
+	 */
 	@Bean
 	MWeatherService loadMWeatherService() {
 		return new MWeatherService();
 	}
 	
+	/**
+	 * Instantiates a new m weather property.
+	 */
 	@Data
 	@ConfigurationProperties("cmo.foundation.weather")
 	public class MWeatherProperty {
+		
+		/** The enable. */
 		private boolean enable;
 	}
 }

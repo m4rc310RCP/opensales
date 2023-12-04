@@ -8,6 +8,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+/**
+ * The Interface MMapper.
+ */
 @Retention(RUNTIME)
 @Target({ TYPE, TYPE_PARAMETER, TYPE_USE })
 public @interface MMapper {

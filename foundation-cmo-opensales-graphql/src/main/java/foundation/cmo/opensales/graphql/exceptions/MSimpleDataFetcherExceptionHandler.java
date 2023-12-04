@@ -11,12 +11,24 @@ import graphql.execution.ResultPath;
 import graphql.language.SourceLocation;
 import graphql.util.LogKit;
 
+/**
+ * The Class MSimpleDataFetcherExceptionHandler.
+ */
 @PublicApi
 public class MSimpleDataFetcherExceptionHandler implements MDataFetcherExceptionHandler {
+    
+    /** The Constant logNotSafe. */
     private static final Logger logNotSafe = LogKit.getNotPrivacySafeLogger(MSimpleDataFetcherExceptionHandler.class);
 
+    /** The Constant defaultImpl. */
     static final MSimpleDataFetcherExceptionHandler defaultImpl = new MSimpleDataFetcherExceptionHandler();
 
+	/**
+	 * On exception.
+	 *
+	 * @param handlerParameters the handler parameters
+	 * @return the m data fetcher exception handler result
+	 */
 	@Override
 	public MDataFetcherExceptionHandlerResult onException(MDataFetcherExceptionHandlerParameters handlerParameters) {
 		Throwable exception = unwrap(handlerParameters.getException());
@@ -30,6 +42,12 @@ public class MSimpleDataFetcherExceptionHandler implements MDataFetcherException
 		return MDataFetcherExceptionHandlerResult.newResult().error(error).build();
 	}
 
+	/**
+	 * Handle exception.
+	 *
+	 * @param handlerParameters the handler parameters
+	 * @return the completable future
+	 */
 	@Override
 	public CompletableFuture<MDataFetcherExceptionHandlerResult> handleException(
 			MDataFetcherExceptionHandlerParameters handlerParameters) {
@@ -37,10 +55,22 @@ public class MSimpleDataFetcherExceptionHandler implements MDataFetcherException
 	}
     
   
+    /**
+	 * Log exception.
+	 *
+	 * @param error     the error
+	 * @param exception the exception
+	 */
     protected void logException(ExceptionWhileDataFetching error, Throwable exception) {
         logNotSafe.warn(error.getMessage(), exception);
     }
 
+    /**
+	 * Unwrap.
+	 *
+	 * @param exception the exception
+	 * @return the throwable
+	 */
     protected Throwable unwrap(Throwable exception) {
         if (exception.getCause() != null) {
             if (exception instanceof CompletionException) {

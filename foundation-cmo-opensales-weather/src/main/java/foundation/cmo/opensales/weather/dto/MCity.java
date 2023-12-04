@@ -5,12 +5,18 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.Data;
 
+/**
+ * Instantiates a new m city.
+ */
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MCity {
+	
+	/** The id. */
 	@JsonAlias("id")
 	private Long id;
 	
+	/** The name. */
 	@JsonAlias("nome")
 	private String name;
 	
