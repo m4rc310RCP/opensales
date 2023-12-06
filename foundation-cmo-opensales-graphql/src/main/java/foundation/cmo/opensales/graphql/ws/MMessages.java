@@ -18,10 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.ErrorType;
 import graphql.ExecutionResult;
 import graphql.GraphQLError;
-import io.leangen.graphql.spqr.spring.web.apollo.ApolloMessage;
-import io.leangen.graphql.spqr.spring.web.apollo.ConnectionErrorMessage;
-import io.leangen.graphql.spqr.spring.web.apollo.DataMessage;
-import io.leangen.graphql.spqr.spring.web.apollo.ErrorMessage;
 
 /**
  * The Class MMessages.

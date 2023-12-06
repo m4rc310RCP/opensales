@@ -1,6 +1,7 @@
 package foundation.cmo.opensales.graphql.security;
 
 import foundation.cmo.opensales.graphql.exceptions.MException;
+import foundation.cmo.opensales.graphql.messages.i18n.M;
 import foundation.cmo.opensales.graphql.security.dto.MUser;
 
 /**
@@ -44,6 +45,9 @@ public interface IMAuthUserProvider {
 	 * @return true, if is valid user
 	 */
 	boolean isValidUser(MUser user);
+	
+	
+	void setMessage(M m);
 
 	/**
 	 * Valid user access.

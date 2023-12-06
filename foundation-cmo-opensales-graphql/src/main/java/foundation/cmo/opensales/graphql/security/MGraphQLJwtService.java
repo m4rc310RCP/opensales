@@ -23,10 +23,8 @@ import foundation.cmo.opensales.graphql.security.dto.MUser;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import lombok.extern.slf4j.Slf4j;
 
 /** The Constant log. */
-@Slf4j
 public class MGraphQLJwtService {
 
 	/** The jwt signing key. */
@@ -178,11 +176,7 @@ public String generateToken(UserDetails userDetails) {
 	 */
 	public <T> T userFromToken(String token, Class<T> type) throws Exception {
 		ObjectMapper mapper = new ObjectMapper();
-		String json = decrypt(token);
-		log.info("JSON: {}", json);
-		
-		
-		
+		String json = decrypt(token);		
 		return mapper.readValue(json, type);
 	}
 
@@ -307,30 +301,14 @@ public String generateToken(UserDetails userDetails) {
 		user.setRequestId("AA123");
 		user.setRoles(new String[] { "ADMIN" });
 
-		// Db9K1HlH1Ebpnyhk0SqkM9LoUN1bZraHOQzBSap+z8C6X7iJfiBXTRVkTrFAp+MMRKg1Xt4vmmiJrwazmDATOqx26qKrnHkW9r6mXeZW7ycZlhzSkBSYIbCs117dRQjJ
-		// y7nJp7r8mWv1iE3Injx/8WY1K7d7+Rs2ZruiGY8kQcbQkQ4e6NLBLeV7nMYNF/bBLa0UMcjcvR5wDFwOyFFO79Gy8IUv1rguuyobWUTx+ZHHHZH2Vc2cN+T3GlOoDteF
-
-		// MUserDetsils from = MUserDetsils.from(user);
-
-		// log.info("{}", generateToken("ABCD"));
-
 		try {
-			String value = mapper.writeValueAsString(user);
-//			log.info(value);
-//			
+			String value = mapper.writeValueAsString(user);		
 			value = encrypt(value);
-//			log.info(value);
-
-			// String value = encrypt("Marcelo Lopes"); // uBm8TsMH2+fB0pyqLN2ruQ==
-			// uBm8TsMH2+fB0pyqLN2ruQ==
-			log.info(value);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		log.info(String.format("%s : %s", jwtSigningKey, jwtSalt));
 	}
 
 	/**

@@ -45,7 +45,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
-import foundation.cmo.opensales.graphql.handlers.MExceptionHandler;
+import foundation.cmo.opensales.graphql.exceptions.MGraphQLException;
+import foundation.cmo.opensales.graphql.exceptions.MGraphQLExceptionHandler;
 import foundation.cmo.opensales.graphql.mappers.annotations.MMapper;
 import foundation.cmo.opensales.graphql.messages.MMessageBuilder;
 import foundation.cmo.opensales.graphql.messages.i18n.M;
@@ -103,11 +104,9 @@ public class MGraphQLAutoConfiguration {
 	/** The auth user provider. */
 	@Autowired(required = false)
 	private IMAuthUserProvider authUserProvider;
-	
-	//@Autowired
-	//private MPerConnectionProtocolHandler connectionProtocolHandler;
-	
-	
+
+	// @Autowired
+	// private MPerConnectionProtocolHandler connectionProtocolHandler;
 
 	/**
 	 * Instantiates a new m graph QL auto configuration.
@@ -125,12 +124,12 @@ public class MGraphQLAutoConfiguration {
 		log.info("~> Module '{}' has been loaded.", "foundation.cmo.service.graphql");
 	}
 
-/**
- * Test dinamic class.
- *
- * @return the object
- * @throws Exception the exception
- */
+	/**
+	 * Test dinamic class.
+	 *
+	 * @return the object
+	 * @throws Exception the exception
+	 */
 //	@Bean
 	Object testDinamicClass() throws Exception {
 		Class<?> type = new ByteBuddy().subclass(Object.class).name("MServiceTestV1").annotateType(new GraphQLApi[0])
@@ -140,9 +139,6 @@ public class MGraphQLAutoConfiguration {
 
 		return type.getDeclaredConstructor().newInstance();
 	}
-	
-	
-	
 
 	/**
 	 * Load M flux service.
@@ -162,7 +158,7 @@ public class MGraphQLAutoConfiguration {
 	@Bean()
 	MMessageBuilder loadMMessageBuilder() {
 		return messageBuilder;
-	} 
+	}
 
 	/**
 	 * Graph QL.
@@ -175,40 +171,58 @@ public class MGraphQLAutoConfiguration {
 //		schema.getQueryType().getFields().forEach(def -> {
 //			log.info(">>>> {}", def.getArguments());
 //		});
-		
-		//List<GraphQLFieldDefinition> fields = new ArrayList<>();
-		//fields.addAll(schema.getQueryType().getFields());
-		//fields.addAll(schema.getMutationType().getFields());
-		//fields.addAll(schema.getSubscriptionType().getFields());
-		
-		//schema.getAllTypesAsList().forEach(type -> {
-		//	log.info("{} -> {}", type.getName(), type.getClass()); //			System.out.println(type.getClass());
-		//});
-		
-		
 
-		AsyncExecutionStrategy aes = new AsyncExecutionStrategy(new MExceptionHandler());
-		return GraphQL.newGraphQL(schema).queryExecutionStrategy(aes).mutationExecutionStrategy(aes).build();
+		// List<GraphQLFieldDefinition> fields = new ArrayList<>();
+		// fields.addAll(schema.getQueryType().getFields());
+		// fields.addAll(schema.getMutationType().getFields());
+		// fields.addAll(schema.getSubscriptionType().getFields());
+
+		// schema.getAllTypesAsList().forEach(type -> {
+		// log.info("{} -> {}", type.getName(), type.getClass()); //
+		// System.out.println(type.getClass());
+		// });
+
+//		schema.getSubscriptionType().getFields().forEach(sf -> {
+//			log.info("Sub -> {}", sf);
+//			});
+
+		// SubscriptionExecutionStrategy subscriptionExecutionStrategy = new
+		// SubscriptionExecutionStrategy(new MExceptionHandler());
+
+		// MDataFetcherExceptionHandler mDataFetcherExceptionHandler = new
+		// MDataFetcherExceptionHandler() {};
+
+//		AsyncExecutionStrategy aes = new AsyncExecutionStrategy(new MExceptionHandler());
+//		return GraphQL.newGraphQL(schema)
+//				.defaultDataFetcherExceptionHandler(new MExceptionHandler())
+//				.queryExecutionStrategy(aes)
+//				.subscriptionExecutionStrategy(aes)
+//				.mutationExecutionStrategy(aes).build();
+
+		AsyncExecutionStrategy aes = new AsyncExecutionStrategy(new MGraphQLExceptionHandler());
+
+		return GraphQL.newGraphQL(schema).subscriptionExecutionStrategy(aes).mutationExecutionStrategy(aes)
+				.queryExecutionStrategy(aes).build();
 	}
 
 	// ----- Security ----- //
-	
+
 	/**
 	 * Cors configurer.
 	 *
 	 * @return the web mvc configurer
 	 */
 	@Bean
-    WebMvcConfigurer corsConfigurer() {
+	WebMvcConfigurer corsConfigurer() {
 		log.info("Configure Cors");
-        return new WebMvcConfigurer() {
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/graphql").allowedOrigins("*");
-            }
-        };
-    }
-	
+		return new WebMvcConfigurer() {
+			@Override
+			public void addCorsMappings(CorsRegistry registry) {
+				registry.addMapping("/graphql").allowedOrigins("*");
+			}
+		};
+	}
+
 	/**
 	 * Gets the m graph QL jwt service.
 	 *
@@ -239,8 +253,7 @@ public class MGraphQLAutoConfiguration {
 
 		return new MGraphQLSecurity().getSecurityFilterChain(http, jwt, authUserProvider);
 	}
-	
-	
+
 	/**
 	 * Gets the user details service.
 	 *
@@ -258,8 +271,8 @@ public class MGraphQLAutoConfiguration {
 	 * The listener interface for receiving MApplication events. The class that is
 	 * interested in processing a MApplication event implements this interface, and
 	 * the object created with that class is registered with a component using the
-	 * component's <code>addMApplicationListener</code> method. When the MApplication
-	 * event occurs, that object's appropriate method is invoked.
+	 * component's <code>addMApplicationListener</code> method. When the
+	 * MApplication event occurs, that object's appropriate method is invoked.
 	 *
 	 */
 	// ----- Messages ----- //
@@ -312,7 +325,11 @@ public class MGraphQLAutoConfiguration {
 	 */
 	@Bean
 	M loadMessage() {
-		return new M();
+		M message = new M();
+		if (authUserProvider != null) {
+			authUserProvider.setMessage(message);
+		}
+		return message;
 	}
 
 	/**
@@ -358,7 +375,6 @@ public class MGraphQLAutoConfiguration {
 
 			@Override
 			public String classToTableName(String className) {
-				log.info("----------> {}", className);
 				return super.classToTableName(className);
 			}
 		};
@@ -493,16 +509,13 @@ public class MGraphQLAutoConfiguration {
 				try {
 					Class<?> clazz = Class.forName(bean.getBeanClassName());
 
-					
 //					for(Field field : clazz.getDeclaredFields()) {
 //						field.setAccessible(true);
 //						if (field.isAnnotationPresent(MReportRegistryInfo.class)) {
 //							log.info("Info-----> {}", field.getName());
 //						}
 //					}
-					
-					
-					
+
 //					if (clazz.isAnnotationPresent(MReportRegistryInfo.class)) {
 //					}
 
@@ -538,12 +551,12 @@ public class MGraphQLAutoConfiguration {
 //	}
 
 	/**
- * Graph QL schema.
- *
- * @param schemaGenerator the schema generator
- * @return the graph QL schema
- */
-@Bean
+	 * Graph QL schema.
+	 *
+	 * @param schemaGenerator the schema generator
+	 * @return the graph QL schema
+	 */
+	@Bean
 //	@ConditionalOnMissingBean
 	GraphQLSchema graphQLSchema(GraphQLSchemaGenerator schemaGenerator) {
 		schemaGenerator.withResolverInterceptors(new AuthInterceptor(), new RegistryInfoInterceptor());
@@ -671,11 +684,11 @@ public class MGraphQLAutoConfiguration {
 		};
 	}
 
-/**
- * Test type info generator.
- *
- * @return the type info generator
- */
+	/**
+	 * Test type info generator.
+	 *
+	 * @return the type info generator
+	 */
 //	 @Bean
 	TypeInfoGenerator testTypeInfoGenerator() {
 		return new TypeInfoGenerator() {
@@ -696,17 +709,16 @@ public class MGraphQLAutoConfiguration {
 			}
 		};
 	}
-	
+
 //	@Bean
 //	PerConnectionApolloHandler loadTextWebSocketHandler() {
 //		return new PerConnectionApolloHandler(null, null, null, 0, 0, 0);
 //	}
-	
 
 	/**
- * The Class AuthInterceptor.
- */
-private class AuthInterceptor implements ResolverInterceptor {
+	 * The Class AuthInterceptor.
+	 */
+	private class AuthInterceptor implements ResolverInterceptor {
 
 		/**
 		 * Around invoke.
@@ -750,7 +762,7 @@ private class AuthInterceptor implements ResolverInterceptor {
 //				log.info("MReportRegistryInfo: {}", rri);
 //			}
 
-			//log.info("MReportRegistryInfo: {}", context);
+			// log.info("MReportRegistryInfo: {}", context);
 
 			return continuation.proceed(context);
 		}
@@ -759,26 +771,26 @@ private class AuthInterceptor implements ResolverInterceptor {
 	/**
 	 * The Class MissingGenerics.
 	 */
-	@SuppressWarnings({"rawtypes","unchecked"})
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static class MissingGenerics {
-		
+
 		/** The raw. */
 		private final Map raw;
-        
-        /** The unbounded. */
-        private final Map<?, ?> unbounded;
 
-        /**
+		/** The unbounded. */
+		private final Map<?, ?> unbounded;
+
+		/**
 		 * Instantiates a new missing generics.
 		 *
 		 * @param raw       the raw
 		 * @param unbounded the unbounded
 		 */
-        @JsonCreator
-        public MissingGenerics(Map raw, Map<?, ?> unbounded) {
-            this.raw = raw;
-            this.unbounded = unbounded;
-        }
+		@JsonCreator
+		public MissingGenerics(Map raw, Map<?, ?> unbounded) {
+			this.raw = raw;
+			this.unbounded = unbounded;
+		}
 
 		/**
 		 * Gets the raw.
@@ -786,17 +798,17 @@ private class AuthInterceptor implements ResolverInterceptor {
 		 * @return the raw
 		 */
 		public Map<Integer, Integer> getRaw() {
-            return raw;
-        }
+			return raw;
+		}
 
-        /**
+		/**
 		 * Gets the unbounded.
 		 *
 		 * @return the unbounded
 		 */
-        public Map<?, ?> getUnbounded() {
-            return unbounded;
-        }
-    }
-	
+		public Map<?, ?> getUnbounded() {
+			return unbounded;
+		}
+	}
+
 }

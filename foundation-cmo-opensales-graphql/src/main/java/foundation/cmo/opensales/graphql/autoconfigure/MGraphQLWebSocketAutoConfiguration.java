@@ -11,12 +11,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 
 import foundation.cmo.opensales.graphql.handlers.MPerConnectionProtocolHandler;
-import foundation.cmo.opensales.graphql.security.IMAuthUserProvider;
 import foundation.cmo.opensales.graphql.security.MGraphQLJwtService;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;

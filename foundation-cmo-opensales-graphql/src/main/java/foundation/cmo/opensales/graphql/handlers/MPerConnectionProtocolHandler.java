@@ -16,10 +16,8 @@ import foundation.cmo.opensales.graphql.security.MGraphQLJwtService;
 import graphql.GraphQL;
 import io.leangen.graphql.spqr.spring.web.apollo.PerConnectionApolloHandler;
 import io.leangen.graphql.spqr.spring.web.mvc.websocket.GraphQLWebSocketExecutor;
-import lombok.extern.slf4j.Slf4j;
 
 /** The Constant log. */
-@Slf4j
 public class MPerConnectionProtocolHandler extends PerConnectionApolloHandler {
 
 	/** The graph QL. */

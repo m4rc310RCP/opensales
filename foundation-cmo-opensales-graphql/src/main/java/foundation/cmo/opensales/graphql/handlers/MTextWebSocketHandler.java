@@ -24,7 +24,6 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import foundation.cmo.opensales.graphql.security.IMAuthUserProvider;
 import foundation.cmo.opensales.graphql.security.MAuthToken;
 import foundation.cmo.opensales.graphql.security.MEnumToken;
 import foundation.cmo.opensales.graphql.security.MGraphQLJwtService;
@@ -32,7 +31,6 @@ import foundation.cmo.opensales.graphql.security.dto.MUser;
 import foundation.cmo.opensales.graphql.ws.MInitMessage;
 import foundation.cmo.opensales.graphql.ws.MMessage;
 import foundation.cmo.opensales.graphql.ws.MMessages;
-import foundation.cmo.opensales.graphql.ws.MPayloadMessage;
 import foundation.cmo.opensales.graphql.ws.MStartMessage;
 import graphql.ExecutionResult;
 import graphql.GraphQL;
@@ -72,12 +70,6 @@ public class MTextWebSocketHandler extends TextWebSocketHandler {
 	@Autowired
 	private MGraphQLJwtService jwtService;
 
-	/** The auth user provider. */
-	@Autowired
-	private IMAuthUserProvider authUserProvider;
-	
-	/** The user. */
-	private MUser user;
 	
 	/**
 	 * Instantiates a new m text web socket handler.
